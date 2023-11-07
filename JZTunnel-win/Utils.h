@@ -38,9 +38,34 @@ int initializeWinMutex() {
 	return 0;
 } 
 
-p_Sockets_Data initializeSocketDataVar(short int clientport) {
-	p_Sockets_Data sockdata = (p_Sockets_Data)malloc(sizeof(Sockets_Data));
-	sockdata->client_port = clientport;
+p_Sockets_Data initializeSocketDataVar() {
+	unsigned int clientport = 0;
 
-	return sockdata;
+	while (!clientport || clientport > 65535) {
+		printf("Input Port to open (1 - 65535): ");
+		scanf_s("%u", &clientport);
+	}
+
+	WSADATA WSAdata;
+	if (WSAStartup(MAKEWORD(2, 2), &WSAdata)) {
+		return nullptr;
+	}
+
+	p_Sockets_Data SocketStatus = (p_Sockets_Data)malloc(sizeof(Sockets_Data));
+	SocketStatus->client_port = (unsigned short int)clientport;
+
+	return SocketStatus;
+}
+
+void waitforSockets(p_Sockets_Data SocketStatus) {
+	while (SocketStatus->status != 3) {
+		Sleep(30);
+	}
+}
+
+void freeSocketDataVar(p_Sockets_Data SocketStatus) {
+	WSACleanup();
+
+	free(SocketStatus->clientports);
+	free(SocketStatus);
 }
