@@ -88,6 +88,8 @@ DWORD WINAPI ServerSocket(LPVOID args) {
 		return 0;
 	}
 
+	SocketStatus->status = 1;
+
 	int sockReceived;
 	sockaddr_in destAddr;
 	destAddr.sin_family = AF_INET;
