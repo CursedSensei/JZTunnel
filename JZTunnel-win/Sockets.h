@@ -1,13 +1,58 @@
 #pragma once
 
-SOCKET GetClientSocket() {
-	// save client port and socket descriptor
+short int GetClientSocket(p_ClientSocketParam clientparams) {
+	clientparams->SocketStatus->clientsockets[clientparams->id - 1] = socket(AF_INET, SOCK_RAW, 0);
+	if (clientparams->SocketStatus->clientsockets[clientparams->id - 1] == INVALID_SOCKET) {
+		return CLIENT_ERROR;
+	}
+
+	sockaddr_in sockAddr;
+
+	sockAddr.sin_family = AF_INET;
+	sockAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	sockAddr.sin_port = 0;
+
+	if (bind(clientparams->SocketStatus->clientsockets[clientparams->id - 1], (sockaddr*)&sockAddr, sizeof(sockAddr))) {
+		closesocket(clientparams->SocketStatus->clientsockets[clientparams->id - 1]);
+		return CLIENT_ERROR;
+	}
+
+	clientparams->SocketStatus->clientports[clientparams->id - 1] = ntohs(sockAddr.sin_port);
+
+	return 0;
 }
 
 DWORD WINAPI ClientSocket(LPVOID args) {
 	p_ClientSocketParam clientparams = (p_ClientSocketParam)args;
 
+	if (GetClientSocket(clientparams) == CLIENT_ERROR) {
+		clientparams->SocketStatus->clientsockets[clientparams->id - 1] = INVALID_SOCKET;
+		clientparams->SocketStatus->clientports[clientparams->id - 1] = CLIENT_ERROR;
+		free(clientparams);
+		return 0;
+	}
 
+	int clientReceived;
+	sockaddr_in outAddr;
+	int outAddrlen = sizeof(outAddr);
+
+	do {
+		Tunnel_Packet sendpack;
+
+		clientReceived = recvfrom(clientparams->SocketStatus->clientsockets[clientparams->id - 1], (char *)&sendpack.data, PACKET_SIZE - 2, 0, (sockaddr*)&outAddr, &outAddrlen);
+		if (clientReceived <= 0) {
+			continue;
+		}
+
+		sendpack.id = clientparams->id;
+
+		send(clientparams->SocketStatus->ServerSocket, (const char*)&sendpack, PACKET_SIZE, 0);
+
+	} while (clientReceived > 0);
+
+	closesocket(clientparams->SocketStatus->clientsockets[clientparams->id - 1]);
+	clientparams->SocketStatus->clientsockets[clientparams->id - 1] = INVALID_SOCKET;
+	clientparams->SocketStatus->clientports[clientparams->id - 1] = CLIENT_ERROR;
 	free(clientparams);
 
 	return 0;
@@ -19,7 +64,7 @@ void DeployClientListener(const unsigned short int id, p_Sockets_Data SocketStat
 	clientargs->id = id;
 	clientargs->SocketStatus = SocketStatus;
 
-	if (SocketStatus->lenports < id) {
+	if (SocketStatus->lenports < id - 1) {
 		SocketStatus->lenports++;
 		SocketStatus->clientports = (unsigned short int*)realloc(SocketStatus->clientports, SocketStatus->lenports * sizeof(unsigned short int));
 		SocketStatus->clientports[id - 1] = 0;
@@ -104,24 +149,24 @@ DWORD WINAPI ServerSocket(LPVOID args) {
 		}
 
 		if (recvpacket.id > SocketStatus->lenports ||
-			SocketStatus->clientports[recvpacket.id] == CLIENT_ERROR ||
-			(SocketStatus->clientsockets[recvpacket.id] == INVALID_SOCKET && SocketStatus->clientports[recvpacket.id] != 0))
+			SocketStatus->clientports[recvpacket.id - 1] == CLIENT_ERROR ||
+			(SocketStatus->clientsockets[recvpacket.id - 1] == INVALID_SOCKET && SocketStatus->clientports[recvpacket.id - 1] != 0))
 		{
 
 			DeployClientListener(recvpacket.id, SocketStatus);
 
-			while (SocketStatus->clientports[recvpacket.id] == 0) {
+			while (SocketStatus->clientports[recvpacket.id - 1] == 0) {
 				Sleep(1);
 			}
 
-			if (SocketStatus->clientports[recvpacket.id] == INVALID_SOCKET) {
+			if (SocketStatus->clientports[recvpacket.id - 1] == INVALID_SOCKET) {
 				continue;
 			}
 		}
 
-		destAddr.sin_port = htons(SocketStatus->clientports[recvpacket.id]);
+		destAddr.sin_port = htons(SocketStatus->clientports[recvpacket.id - 1]);
 
-		sendto(SocketStatus->clientsockets[recvpacket.id], (const char *)&recvpacket.data, sizeof(recvpacket.data), 0, (struct sockaddr*)&destAddr, sizeof(destAddr));
+		sendto(SocketStatus->clientsockets[recvpacket.id - 1], (const char *)&recvpacket.data, sizeof(recvpacket.data), 0, (struct sockaddr*)&destAddr, sizeof(destAddr));
 	} while (sockReceived > 0);
 
 	SocketStatus->status = 3;
