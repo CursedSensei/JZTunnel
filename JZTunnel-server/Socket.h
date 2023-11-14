@@ -49,3 +49,16 @@ SOCKET getClientSocket(SOCKET listenersock) {
         return SOCKET_ERROR;
     }
 }
+
+PTHREAD_FUNCTION listenerThread(void *args) {
+    p_Listener_Pipe listenPipe = (p_Listener_Pipe) args;
+    
+    while (1) {
+        while (!clientStatus) {
+            sleep(5);
+        }
+        while (clientStatus) {
+            // listen to send
+        }
+    }
+}
