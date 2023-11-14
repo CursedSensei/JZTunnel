@@ -57,8 +57,22 @@ PTHREAD_FUNCTION listenerThread(void *args) {
         while (!clientStatus) {
             sleep(5);
         }
+
         while (clientStatus) {
-            // listen to send
+            Tunnel_Packet packetRecv;
+            struct sockaddr_in recvAddr;
+
+            if (recvfrom(listenPipe->listenerSocket, (void *)packetRecv.data, PACKET_SIZE - 2, 0, (struct sockaddr *)&recvAddr, sizeof(struct sockaddr_in)) > 0) {
+                packetRecv.id = getAddrId(&recvAddr, listenPipe);
+
+                send(listenPipe->clientSocket, (void *)&packetRecv, PACKET_SIZE, 0);
+            }
         }
     }
+}
+
+void deployListenerThread(p_Listener_Pipe listenerPipe) {
+    pthread_t pid;
+
+    pthread_create(&pid, NULL, listenerThread, (void *)listenerPipe);
 }

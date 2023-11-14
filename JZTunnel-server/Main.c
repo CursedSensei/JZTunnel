@@ -2,14 +2,15 @@
 
 int main() {
 	SOCKET listenerSocket = getListenerSocket();
-	p_Listener_Pipe listenPipe = getListenerPipe();
+	p_Listener_Pipe listenPipe = getListenerPipe(listenerSocket);
+	deployListenerThread(listenPipe);
 
 	while (1) {
 		SOCKET clientSocket = getClientSocket(listenerSocket);
 		if (checkSocket(clientSocket)) continue;
 		else clientStatus = TRUE;
 
-		// to deployments
+		// listen to client
 
 		cleanClientSocket(clientSocket, listenPipe);
 	}

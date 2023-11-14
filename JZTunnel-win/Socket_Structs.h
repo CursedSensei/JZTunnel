@@ -15,6 +15,6 @@ typedef struct tagClientSocketParam {
 }ClientSocketParam, *p_ClientSocketParam;
 
 struct Tunnel_Packet {
-	short int id;
+	unsigned short int id;
 	BYTE data[PACKET_SIZE - 2];
 };

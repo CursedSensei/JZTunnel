@@ -8,6 +8,20 @@ int checkSocket(SOCKET sock_fd) {
     return 0;
 }
 
+int compareIp(char *recvip, char *checkIp) {
+    if (strlen(recvip) != strlen(checkIp)) {
+        return FALSE;
+    }
+
+    for (int i = 0; i < strlen(recvip); i++) {
+        if (recvip[i] != checkIp[i]) {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
 int checkStr(char * string) {
     char name[7] = "CLIENT\0";
     for (int i = 0; i < 7; i++) {
@@ -31,12 +45,30 @@ void cleanClientSocket(SOCKET clientSock, p_Listener_Pipe listenPipe) {
     listenPipe->clientSocket = SOCKET_ERROR;
 }
 
-p_Listener_Pipe getListenerPipe() {
+p_Listener_Pipe getListenerPipe(SOCKET listenSocket) {
     p_Listener_Pipe listenpipe = (p_Listener_Pipe)malloc(sizeof(Listener_Pipe));
     listenpipe->addresses = (p_address)malloc(0);
+    listenpipe->addrLen = 0;
     listenpipe->clientSocket = SOCKET_ERROR;
+    listenpipe->listenerSocket = listenSocket;
+
+    return listenpipe;
 }
 
-void deployListenerThread() {
-    
+short int getAddrId(struct sockaddr_in *recvAddr, p_Listener_Pipe listenpipe) {
+    char *ip = inet_ntoa(recvAddr->sin_addr);
+    unsigned short int port = htons(recvAddr->sin_port);
+
+    int i;
+    for (i = 0; i < listenpipe->addrLen; i++) {
+        if (port == listenpipe->addresses[i].port && compareIp(ip, listenpipe->addresses[i].ip)) {
+            return i;
+        }
+    }
+
+    listenpipe->addresses = (p_address)realloc(listenpipe->addresses, ++listenpipe->addrLen * sizeof(address));
+    strcpy(listenpipe->addresses[i].ip, ip);
+    listenpipe->addresses[i].port = port;
+
+    return i;
 }
