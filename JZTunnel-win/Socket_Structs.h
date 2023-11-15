@@ -19,7 +19,7 @@ struct Tunnel_Packet {
 	BYTE data[PACKET_SIZE - 2];
 };
 
-typedef struct {
+struct Handshake_Packet {
 	char name[7] = "CLIENT";
 	unsigned int pass = 0xDE4A5FBA;
-} Handshake_Packet;
+};
