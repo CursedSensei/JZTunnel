@@ -11,7 +11,9 @@ int main() {
 		return 1;
 	}
 
+	printf("Connecting . . .\r");
 	Connect_to_Server(SocketData);
+	printf("Connected!           \n");
 	waitforSockets(SocketData);
 	freeSocketDataVar(SocketData);
 

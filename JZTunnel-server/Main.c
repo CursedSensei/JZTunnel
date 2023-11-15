@@ -6,9 +6,13 @@ int main() {
 	deployListenerThread(listenPipe);
 
 	while (TRUE) {
+		printf("Waiting for client\n");
+
 		SOCKET clientSocket = getClientSocket(listenerSocket);
 		if (checkSocket(clientSocket)) continue;
 		else clientStatus = TRUE;
+
+		printf("Connected to client\n");
 
 		Tunnel_Packet clientPacket;
 

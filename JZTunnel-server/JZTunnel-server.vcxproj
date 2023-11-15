@@ -19,12 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Main.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="Frameworks.h" />
     <ClInclude Include="Socket.h" />
     <ClInclude Include="Socket_Structs.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Main.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
