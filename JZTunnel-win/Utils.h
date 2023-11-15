@@ -5,7 +5,7 @@ int initializeWinMutex() {
 
 	HWND winMutexWindow = FindWindowA(winMutexText, "Client");
 
-	if (winMutexText) {
+	if (winMutexWindow) {
 		return 1;
 	}
 
@@ -14,6 +14,7 @@ int initializeWinMutex() {
 
 	winMutex.hInstance = (HINSTANCE)GetModuleHandleA(NULL);
 	winMutex.lpszClassName = winMutexText;
+	winMutex.lpfnWndProc = DefWindowProc;
 
 	RegisterClassA(&winMutex);
 	//Create window
@@ -33,7 +34,7 @@ int initializeWinMutex() {
 
 	if (!winMutexWindow) return 1;
 
-	CloseHandle(winMutexWindow);
+	//CloseHandle(winMutexWindow); unknown reason but invalid handle
 
 	return 0;
 } 
@@ -53,6 +54,8 @@ p_Sockets_Data initializeSocketDataVar() {
 
 	p_Sockets_Data SocketStatus = (p_Sockets_Data)malloc(sizeof(Sockets_Data));
 	SocketStatus->client_port = (unsigned short int)clientport;
+	SocketStatus->clientports = (unsigned short int*)malloc(0);
+	SocketStatus->clientsockets = (SOCKET*)malloc(0);
 
 	return SocketStatus;
 }

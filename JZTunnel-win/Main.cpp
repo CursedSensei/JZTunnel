@@ -8,7 +8,7 @@ int main() {
 
 	p_Sockets_Data SocketData = initializeSocketDataVar();
 	if (SocketData == nullptr) {
-		return 1;
+		return 2;
 	}
 
 	printf("Connecting . . .\r");
