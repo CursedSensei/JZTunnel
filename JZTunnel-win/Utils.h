@@ -69,3 +69,8 @@ void freeSocketDataVar(p_Sockets_Data SocketStatus) {
 	free(SocketStatus->clientports);
 	free(SocketStatus);
 }
+
+void sendHandshake(SOCKET ServerSocket) {
+	Handshake_Packet handshake;
+	send(ServerSocket, (char *)&handshake, sizeof(Handshake_Packet), 0);
+}

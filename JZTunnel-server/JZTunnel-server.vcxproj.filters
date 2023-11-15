@@ -23,5 +23,11 @@
     <ClInclude Include="Frameworks.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Socket.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Socket_Structs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

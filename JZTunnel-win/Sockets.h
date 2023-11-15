@@ -133,6 +133,8 @@ DWORD WINAPI ServerSocket(LPVOID args) {
 		return 0;
 	}
 
+	sendHandshake(SocketStatus->ServerSocket);
+
 	SocketStatus->status = 1;
 
 	int sockReceived;
@@ -167,7 +169,7 @@ DWORD WINAPI ServerSocket(LPVOID args) {
 		destAddr.sin_port = htons(SocketStatus->clientports[recvpacket.id - 1]);
 
 		sendto(SocketStatus->clientsockets[recvpacket.id - 1], (const char *)&recvpacket.data, sizeof(recvpacket.data), 0, (struct sockaddr*)&destAddr, sizeof(destAddr));
-	} while (sockReceived > 0);
+	} while (sockReceived >= 0);
 
 	SocketStatus->status = 3;
 	closesocket(SocketStatus->ServerSocket);

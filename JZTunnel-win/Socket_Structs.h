@@ -18,3 +18,8 @@ struct Tunnel_Packet {
 	unsigned short int id;
 	BYTE data[PACKET_SIZE - 2];
 };
+
+typedef struct {
+	char name[7] = "CLIENT";
+	unsigned int pass = 0xDE4A5FBA;
+} Handshake_Packet;
