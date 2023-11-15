@@ -53,7 +53,7 @@ SOCKET getClientSocket(SOCKET listenersock) {
 PTHREAD_FUNCTION listenerThread(void *args) {
     p_Listener_Pipe listenPipe = (p_Listener_Pipe) args;
     
-    while (1) {
+    while (TRUE) {
         while (!clientStatus) {
             sleep(5);
         }
@@ -61,8 +61,9 @@ PTHREAD_FUNCTION listenerThread(void *args) {
         while (clientStatus) {
             Tunnel_Packet packetRecv;
             struct sockaddr_in recvAddr;
+            socklen_t addrlen = sizeof(struct sockaddr_in);
 
-            if (recvfrom(listenPipe->listenerSocket, (void *)packetRecv.data, PACKET_SIZE - 2, 0, (struct sockaddr *)&recvAddr, sizeof(struct sockaddr_in)) > 0) {
+            if (recvfrom(listenPipe->listenerSocket, (void *)packetRecv.data, PACKET_SIZE - 2, 0, (struct sockaddr *)&recvAddr, &addrlen) > 0) {
                 packetRecv.id = getAddrId(&recvAddr, listenPipe);
 
                 send(listenPipe->clientSocket, (void *)&packetRecv, PACKET_SIZE, 0);

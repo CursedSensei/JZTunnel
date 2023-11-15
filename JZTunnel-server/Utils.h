@@ -43,6 +43,9 @@ void cleanClientSocket(SOCKET clientSock, p_Listener_Pipe listenPipe) {
     close(clientSock);
 
     listenPipe->clientSocket = SOCKET_ERROR;
+    memset(listenPipe->addresses, 0, sizeof(address) * listenPipe->addrLen);
+    listenPipe->addrLen = 0;
+    listenPipe->addresses = (p_address)realloc(listenPipe->addresses, 0);
 }
 
 p_Listener_Pipe getListenerPipe(SOCKET listenSocket) {
