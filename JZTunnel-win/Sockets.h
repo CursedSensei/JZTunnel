@@ -26,6 +26,8 @@ DWORD WINAPI ClientSocket(LPVOID args) {
 	p_ClientSocketParam clientparams = (p_ClientSocketParam)args;
 
 	if (GetClientSocket(clientparams) == CLIENT_ERROR) {
+		printf("Client listener Error!\n");
+
 		clientparams->SocketStatus->clientsockets[clientparams->id - 1] = INVALID_SOCKET;
 		clientparams->SocketStatus->clientports[clientparams->id - 1] = CLIENT_ERROR;
 		free(clientparams);
@@ -35,6 +37,8 @@ DWORD WINAPI ClientSocket(LPVOID args) {
 	int clientReceived;
 	sockaddr_in outAddr;
 	int outAddrlen = sizeof(outAddr);
+
+	printf("Client Listener deployed!\n");
 
 	do {
 		Tunnel_Packet sendpack;
@@ -133,9 +137,14 @@ DWORD WINAPI ServerSocket(LPVOID args) {
 		return 0;
 	}
 
+	printf("Sending Handshake!\n");
+
 	sendHandshake(SocketStatus->ServerSocket);
 
+	printf("Handshake Sent!\n");
+
 	SocketStatus->status = 1;
+	printf("Connected!\n");
 
 	int sockReceived;
 	sockaddr_in destAddr;
