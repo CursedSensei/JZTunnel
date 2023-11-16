@@ -62,6 +62,8 @@ short int getAddrId(struct sockaddr_in *recvAddr, p_Listener_Pipe listenpipe) {
     char *ip = inet_ntoa(recvAddr->sin_addr);
     unsigned short int port = htons(recvAddr->sin_port);
 
+    printf("Packet recieved from:\nIP: %s\nPort: %u\n", ip, port);
+
     int i;
     for (i = 0; i < listenpipe->addrLen; i++) {
         if (port == listenpipe->addresses[i].port && compareIp(ip, listenpipe->addresses[i].ip)) {
