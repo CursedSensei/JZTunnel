@@ -33,15 +33,15 @@ SOCKET getClientSocket(SOCKET listenersock) {
         return SOCKET_ERROR;
     }
 
-    p_Handshake_Packet recvhandshake;
+    Handshake_Packet recvhandshake;
 
-    if (recv(clientsock, (void *)recvhandshake, sizeof(Handshake_Packet), 0) <= 0) {
+    if (recv(clientsock, (void *)&recvhandshake, sizeof(Handshake_Packet), 0) <= 0) {
         shutdown(clientsock, SHUT_RDWR);
         close(clientsock);
         return SOCKET_ERROR;
     }
 
-    if (verifyHandshake(recvhandshake)) {
+    if (verifyHandshake(&recvhandshake)) {
         return clientsock;
     } else {
         shutdown(clientsock, SHUT_RDWR);
