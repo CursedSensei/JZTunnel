@@ -58,9 +58,13 @@ p_Listener_Pipe getListenerPipe(SOCKET listenSocket) {
     return listenpipe;
 }
 
-short int getAddrId(struct sockaddr_in *recvAddr, p_Listener_Pipe listenpipe) {
-    char *ip = inet_ntoa(recvAddr->sin_addr);
-    unsigned short int port = htons(recvAddr->sin_port);
+short int getAddrId(char *recv_buf, p_Listener_Pipe listenpipe) {
+    p_IP_Header recv_header = recv_buf;
+
+    char *ip = inet_ntoa(recv_header->src_addr);
+
+    p_UDP_Header porthdr = (recv_buf + 20);
+    unsigned short int port = htons(porthdr->src_port);
 
     printf("Packet recieved from:\nIP: %s\nPort: %u\n", ip, port);
 
