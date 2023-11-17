@@ -54,9 +54,13 @@ PTHREAD_FUNCTION listenerThread(void *args) {
     p_Listener_Pipe listenPipe = (p_Listener_Pipe) args;
     
     while (TRUE) {
+        printf("Listener waiting for client\n");
+
         while (!clientStatus) {
             sleep(5);
         }
+
+        printf("to listen\n");
 
         while (clientStatus) {
             Tunnel_Packet packetRecv;
