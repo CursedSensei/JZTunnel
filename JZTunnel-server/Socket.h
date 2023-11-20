@@ -4,8 +4,6 @@ SOCKET getListenerSocket() {
     SOCKET clientsock;
 
     while (TRUE) {
-        sleep(1);
-
         clientsock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
         if (checkSocket(clientsock)) {
             printf("Socket Error\n");
@@ -30,7 +28,7 @@ SOCKET getListenerSocket() {
 
         struct sockaddr_in dest_addr;
         dest_addr.sin_family = AF_INET;
-        dest_addr.sin_port = htons(25565);
+        dest_addr.sin_port = htons(TUNNEL_PORT);
         dest_addr.sin_addr.s_addr = INADDR_ANY;
 
         if (bind(clientsock, (struct sockaddr *)&dest_addr, sizeof(dest_addr)) >= 0) {
@@ -53,7 +51,7 @@ SOCKET getClientSocket() {
 
         struct sockaddr_in dest_addr;
         dest_addr.sin_family = AF_INET;
-        dest_addr.sin_port = htons(30000);
+        dest_addr.sin_port = htons(CLIENT_PORT);
         dest_addr.sin_addr.s_addr = INADDR_ANY;
 
         if (bind(listenersock, (struct sockaddr *)&dest_addr, sizeof(dest_addr)) >= 0) {
