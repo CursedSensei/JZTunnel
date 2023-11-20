@@ -1,8 +1,15 @@
 #pragma once
 
 short int GetClientSocket(p_ClientSocketParam clientparams) {
-	clientparams->SocketStatus->clientsockets[clientparams->id - 1] = socket(AF_INET, SOCK_RAW, 0);
-	if (clientparams->SocketStatus->clientsockets[clientparams->id - 1] == INVALID_SOCKET) {
+	SOCKET ClientSock = socket(AF_INET, SOCK_RAW, 0);
+	if (ClientSock == INVALID_SOCKET) {
+		return CLIENT_ERROR;
+	}
+
+	char one = 1;
+
+	if (setsockopt(ClientSock, IPPROTO_IP, IP_HDRINCL, &one, sizeof(char)) == INVALID_SOCKET) {
+		closesocket(ClientSock);
 		return CLIENT_ERROR;
 	}
 
@@ -17,6 +24,7 @@ short int GetClientSocket(p_ClientSocketParam clientparams) {
 		return CLIENT_ERROR;
 	}
 
+	clientparams->SocketStatus->clientsockets[clientparams->id - 1] = ClientSock;
 	clientparams->SocketStatus->clientports[clientparams->id - 1] = ntohs(sockAddr.sin_port);
 
 	return 0;

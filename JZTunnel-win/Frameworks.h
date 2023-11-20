@@ -7,7 +7,7 @@
 #pragma comment (lib, "Ws2_32.lib")
 
 #define TUNNEL_IP "input domain name / IP"
-#define TUNNEL_PORT "30000"
+#define TUNNEL_PORT "25565"
 #define CLIENT_ERROR 0x50
 #define PACKET_SIZE 0x5DC
 
