@@ -107,11 +107,11 @@ PTHREAD_FUNCTION listenerThread(void *args) {
         while (clientStatus) {
             Tunnel_Packet packetRecv;
 
-            if (recvfrom(listenPipe->listenerSocket, (void *)packetRecv.data, PACKET_SIZE - 2, 0, NULL, NULL) > 0) {
+            if (recvfrom(listenPipe->listenerSocket, (void *)packetRecv.data, PACKET_SIZE - 2, 0, NULL, NULL) > 0 && clientStatus) {
                 packetRecv.id = getAddrId(packetRecv.data, listenPipe);
 
                 send(listenPipe->clientSocket, (void *)&packetRecv, PACKET_SIZE, 0);
-            }
+            } else printf("pass or error packet \n");
         }
     }
 }
