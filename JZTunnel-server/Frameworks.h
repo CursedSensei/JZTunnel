@@ -16,8 +16,8 @@
 enum bool {FALSE, TRUE};
 static short int clientStatus = FALSE;
 
-#define TUNNEL_PORT 30000 // soon to change
-#define CLIENT_PORT 25565
+#define TUNNEL_PORT 30000
+#define CLIENT_PORT 443 // soon to change
 #define PASS 0xDE4A5FBA
 #define PACKET_SIZE 0x5DC
 
