@@ -17,7 +17,7 @@
 enum bool {FALSE, TRUE};
 short int clientStatus = FALSE;
 
-uint16_t TUNNEL_PORT = htons(30000);
+const uint16_t TUNNEL_PORT = 0x3075; // 30000
 const int PACKET_SIZE = 0x5DC;
 
 #define PASS 0xDE4A5FBA
