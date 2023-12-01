@@ -1,43 +1,39 @@
 #pragma once
 
-SOCKET getListenerSocket() {
+void getListenerSocket(p_Listener_Pipe listenPipe) {
     SOCKET clientsock;
+    SOCKET listenersock;
 
     while (TRUE) {
-        clientsock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
-        if (checkSocket(clientsock)) {
-            printf("Socket Error\n");
+        clientsock = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP));
+        if (!checkSocket(clientsock)) {
+            break;
+        }
+        printf("Socket Error\n");
+    }
+
+    while (TRUE) {
+        listenersock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
+        if (checkSocket(listenersock)) {
             continue;
         }
-
-        unsigned char one = TRUE;
-
-        if (setsockopt(clientsock, IPPROTO_IP, IP_HDRINCL, &one, sizeof(one)) < 0) {
-            close(clientsock);
-            printf("setsockopt 1 Error\n");
-            continue;
-        }
-
-        // if (setsockopt(clientsock, IPPROTO_IP, IPPROTO_RAW, &one, sizeof(one)) < 0) {
-        //     printf("setsockopt 2 Error\n");
-        //     close(clientsock);
-        //     continue;
-        // }
-
-        printf("To bind\n");
 
         struct sockaddr_in dest_addr;
         dest_addr.sin_family = AF_INET;
-        dest_addr.sin_port = htons(TUNNEL_PORT);
+        dest_addr.sin_port = TUNNEL_PORT;
         dest_addr.sin_addr.s_addr = INADDR_ANY;
 
-        if (bind(clientsock, (struct sockaddr *)&dest_addr, sizeof(dest_addr)) >= 0) {
+        if (bind(listenersock, (struct sockaddr *)&dest_addr, sizeof(dest_addr)) >= 0) {
+            shutdown(listenersock, SHUT_RDWR);
             break;
         }
-        close(clientsock);
+        close(listenersock);
     }
 
-    return clientsock;
+    printf("Listener created\n");
+
+    listenPipe->listenerSocket = clientsock;
+    listenPipe->listenerBinder = listenersock;
 }
 
 SOCKET getClientSocket() {
@@ -88,6 +84,7 @@ SOCKET getClientSocket() {
         shutdown(clientsock, SHUT_RDWR);
         close(clientsock);
         close(listenersock);
+        
         return SOCKET_ERROR;
     }
 }
@@ -104,13 +101,23 @@ PTHREAD_FUNCTION listenerThread(void *args) {
 
         printf("to listen\n");
 
+        int bytesReceived = 0;
+        Tunnel_Packet packetRecv;
+
+        memset(&packetRecv, 0, PACKET_SIZE);
+
         while (clientStatus) {
-            Tunnel_Packet packetRecv;
+            bytesReceived = recv(listenPipe->listenerSocket, (void *)packetRecv.data, PACKET_SIZE - 2, 0);
 
-            if (recvfrom(listenPipe->listenerSocket, (void *)packetRecv.data, PACKET_SIZE - 2, 0, NULL, NULL) > 0 && clientStatus) {
-                packetRecv.id = getAddrId(packetRecv.data, listenPipe);
+            if (bytesReceived > 0 && clientStatus) {
 
-                send(listenPipe->clientSocket, (void *)&packetRecv, PACKET_SIZE, 0);
+                if (checkPacket(packetRecv.data, listenPipe)) {
+                    packetRecv.id = getAddrId(packetRecv.data, listenPipe);
+
+                    send(listenPipe->clientSocket, (void *)&packetRecv, PACKET_SIZE, 0);
+                }
+
+                memset(&packetRecv, 0, bytesReceived + 2);
             } else printf("pass or error packet \n");
         }
     }

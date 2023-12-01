@@ -48,12 +48,14 @@ void cleanClientSocket(SOCKET clientSock, p_Listener_Pipe listenPipe) {
     listenPipe->addresses = (p_address)realloc(listenPipe->addresses, 0);
 }
 
-p_Listener_Pipe getListenerPipe(SOCKET listenSocket) {
+p_Listener_Pipe getListenerPipe() {
     p_Listener_Pipe listenpipe = (p_Listener_Pipe)malloc(sizeof(Listener_Pipe));
     listenpipe->addresses = (p_address)malloc(0);
     listenpipe->addrLen = 0;
     listenpipe->clientSocket = SOCKET_ERROR;
-    listenpipe->listenerSocket = listenSocket;
+    listenpipe->listenerSocket = SOCKET_ERROR;
+    listenpipe->listenerBinder = SOCKET_ERROR;
+    memset(&listenpipe->listenerAddr, 0, sizeof(struct in_addr));
 
     return listenpipe;
 }
@@ -80,4 +82,96 @@ short int getAddrId(char *recv_buf, p_Listener_Pipe listenpipe) {
     listenpipe->addresses[i].port = port;
 
     return i;
+}
+
+int checkINET(char * buf, int index) {
+    char check[] = "inet ";
+
+    for (int i = 0; i < 5; i++) {
+        if (buf[index + i] != check[i]) return FALSE;
+    }
+
+    return TRUE;
+}
+
+int checkLocalHost(char *ip) {
+    if (strlen(ip) != 9) return FALSE;
+
+    char check[] = "127.0.0.1";
+    for (int i = 0; i < strlen(ip); i++) {
+        if (ip[i] != check[i]) return FALSE;
+    }
+
+    return TRUE;
+}
+
+char * getNetIp() {
+    static char outIp[16] = "";
+
+    FILE *pipe;
+    char ip[10][21];
+    short int cur_ip = 0;
+    char buf[250];
+
+    pipe = popen("ip a", "r");
+
+    while (fgets(buf, 250, pipe) != NULL) {
+        int i = 0;
+        while (buf[i] == ' ') i++;
+
+        if (!checkINET(buf, i)) {
+            continue;
+        }
+
+        i += 5;
+
+        for (int d = 0; d < 21; d++) {
+            if (buf[i + d] == '/') {
+                ip[cur_ip][d] = '\0';
+                break;
+            }
+            else ip[cur_ip][d] = buf[i + d];
+        }
+        cur_ip++;
+
+    }
+
+    pclose(pipe);
+
+    for (int i = 0; i < cur_ip; i++) {
+        if(!checkLocalHost(ip[i])) {
+            strcpy(outIp, ip[i]);
+            break;
+        }
+    }
+    
+    return outIp;
+}
+
+int checkPacket(char * packet, p_Listener_Pipe listenPipe) {
+    p_IP_Header ipdata = (p_IP_Header)(packet + sizeof(struct ether_header));
+
+    switch (ipdata->protocol) {
+        case IPPROTO_TCP:
+            {
+                p_TCP_Header protodata = (p_TCP_Header)(packet + sizeof(struct ether_header) + sizeof(IP_Header));
+                
+                if (protodata->dest_port != TUNNEL_PORT) return FALSE;
+            }
+            break;
+
+        case IPPROTO_UDP:
+            {
+                p_UDP_Header protodata = (p_UDP_Header)(packet + sizeof(struct ether_header) + sizeof(IP_Header));
+                
+                if (protodata->dest_port != TUNNEL_PORT) return FALSE;
+            }
+            break;
+        default:
+            return FALSE;
+    }
+
+    if (ipdata->dest_addr.s_addr != listenPipe->listenerAddr.s_addr) return FALSE;
+
+    return TRUE;
 }

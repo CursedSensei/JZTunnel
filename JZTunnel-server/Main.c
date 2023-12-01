@@ -1,16 +1,18 @@
 #include "Frameworks.h"
 
 int main() {
-	SOCKET listenerSocket = getListenerSocket();
-	p_Listener_Pipe listenPipe = getListenerPipe(listenerSocket);
+	p_Listener_Pipe listenPipe = getListenerPipe();
+	getListenerSocket(listenPipe);
 	deployListenerThread(listenPipe);
 
 	while (TRUE) {
 		printf("Waiting for client\n");
 
-		SOCKET clientSocket = getClientSocket(listenerSocket);
+		SOCKET clientSocket = getClientSocket(listenPipe->listenerSocket);
 		if (checkSocket(clientSocket)) continue;
 		else clientStatus = TRUE;
+
+		listenPipe->listenerAddr.s_addr = inet_addr(getNetIp());
 
 		printf("Connected to client\n");
 
@@ -24,14 +26,15 @@ int main() {
 				destAddr.sin_addr.s_addr = inet_addr(listenPipe->addresses[clientPacket.id - 1].ip);
 				destAddr.sin_port = htons(listenPipe->addresses[clientPacket.id - 1].port);
 
-				sendto(listenerSocket, (void *)clientPacket.data, PACKET_SIZE - 2, 0, (struct sockaddr *)&destAddr, sizeof(struct sockaddr_in));
+				sendto(listenPipe->listenerSocket, (void *)clientPacket.data, PACKET_SIZE - 2, 0, (struct sockaddr *)&destAddr, sizeof(struct sockaddr_in));
 			}
 		}
 
 		cleanClientSocket(clientSocket, listenPipe);
 	}
 
-	close(listenerSocket);
+	close(listenPipe->listenerSocket);
+	close(listenPipe->listenerBinder);
 
 	return 0;
 }

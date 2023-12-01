@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <net/ethernet.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
@@ -14,12 +15,13 @@
 #define PTHREAD_FUNCTION void*
 
 enum bool {FALSE, TRUE};
-static short int clientStatus = FALSE;
+short int clientStatus = FALSE;
 
-#define TUNNEL_PORT 30000
-#define CLIENT_PORT 443 // soon to change
+uint16_t TUNNEL_PORT = htons(30000);
+const int PACKET_SIZE = 0x5DC;
+
 #define PASS 0xDE4A5FBA
-#define PACKET_SIZE 0x5DC
+#define CLIENT_PORT 443 // soon to change
 
 #include "Socket_Structs.h"
 #include "Utils.h"

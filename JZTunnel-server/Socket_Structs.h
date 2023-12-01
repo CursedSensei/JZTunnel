@@ -6,15 +6,17 @@ typedef struct {
 } Handshake_Packet, *p_Handshake_Packet;
 
 typedef struct {
-    char ip[17];
-    unsigned short int port;
-}address, *p_address;
+    struct in_addr ip;
+    uint16_t port;
+} address, *p_address;
 
 typedef struct {
     p_address addresses;
     unsigned short int addrLen;
+    struct in_addr listenerAddr;
     SOCKET clientSocket;
     SOCKET listenerSocket;
+    SOCKET listenerBinder;
 } Listener_Pipe, *p_Listener_Pipe;
 
 typedef struct {
@@ -23,9 +25,9 @@ typedef struct {
 } Tunnel_Packet, p_Tunnel_Packet;
 
 typedef struct {
-    unsigned char extra[8];
-    unsigned short int protocol;
-    unsigned short int checksum;
+    uint8_t extra[9];
+    uint8_t protocol;
+    uint16_t checksum;
     struct in_addr src_addr;
     struct in_addr dest_addr;
 } IP_Header, *p_IP_Header;
