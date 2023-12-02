@@ -8,12 +8,14 @@ typedef struct {
 typedef struct {
     struct in_addr ip;
     uint16_t port;
+    uint8_t mac[6];
 } address, *p_address;
 
 typedef struct {
     p_address addresses;
     unsigned short int addrLen;
     struct in_addr listenerAddr;
+    uint8_t listenerMac[6];
     SOCKET clientSocket;
     SOCKET listenerSocket;
     SOCKET listenerBinder;
@@ -21,11 +23,12 @@ typedef struct {
 
 typedef struct {
 	unsigned short int id;
-	char data[PACKET_SIZE - 2];
+	char data[PACKET_SIZED - 2];
 } Tunnel_Packet, p_Tunnel_Packet;
 
 typedef struct {
-    uint8_t extra[9];
+    uint8_t extra[8];
+    uint8_t ttl;
     uint8_t protocol;
     uint16_t checksum;
     struct in_addr src_addr;
@@ -46,3 +49,11 @@ typedef struct {
     uint16_t checksum;
     uint16_t urg_ptr;
 } TCP_Header, *p_TCP_Header;
+
+typedef struct {
+    uint32_t src_addr;
+    uint32_t dest_addr;
+    uint8_t reserved;
+    uint8_t protocol;
+    uint16_t length;
+} Pseudo_Header, *p_Pseudo_Header;

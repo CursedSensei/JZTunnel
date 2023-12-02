@@ -8,20 +8,6 @@ int checkSocket(SOCKET sock_fd) {
     return 0;
 }
 
-int compareIp(char *recvip, char *checkIp) {
-    if (strlen(recvip) != strlen(checkIp)) {
-        return FALSE;
-    }
-
-    for (int i = 0; i < strlen(recvip); i++) {
-        if (recvip[i] != checkIp[i]) {
-            return FALSE;
-        }
-    }
-
-    return TRUE;
-}
-
 int checkStr(char * string) {
     char name[7] = "CLIENT\0";
     for (int i = 0; i < 7; i++) {
@@ -61,33 +47,34 @@ p_Listener_Pipe getListenerPipe() {
 }
 
 short int getAddrId(char *recv_buf, p_Listener_Pipe listenpipe) {
-    p_IP_Header recv_header = (p_IP_Header)recv_buf;
+    p_IP_Header recv_header = (p_IP_Header)(recv_buf + sizeof(struct ether_header));
 
-    char *ip = inet_ntoa(recv_header->src_addr);
+    p_UDP_Header porthdr = (p_UDP_Header)(recv_buf + sizeof(IP_Header));
 
-    p_UDP_Header porthdr = (p_UDP_Header)(recv_buf + 20);
-    unsigned short int port = htons(porthdr->src_port);
-
-    printf("Packet recieved from:\nIP: %s\nPort: %u\n", ip, port);
+#if __DEBUG__
+    printf("Packet recieved from IP: %s:%u\n", inet_ntoa(recv_header->src_addr), htons(porthdr->src_port));
+#endif
 
     int i;
     for (i = 0; i < listenpipe->addrLen; i++) {
-        if (port == listenpipe->addresses[i].port && compareIp(ip, listenpipe->addresses[i].ip)) {
-            return i;
+        if (porthdr->src_port == listenpipe->addresses[i].port && recv_header->src_addr.s_addr == listenpipe->addresses[i].ip.s_addr) {
+            return i + 1;
         }
     }
 
     listenpipe->addresses = (p_address)realloc(listenpipe->addresses, ++listenpipe->addrLen * sizeof(address));
-    strcpy(listenpipe->addresses[i].ip, ip);
-    listenpipe->addresses[i].port = port;
+    listenpipe->addresses[i].ip.s_addr, recv_header->dest_addr.s_addr;
+    listenpipe->addresses[i].port = porthdr->dest_port;
 
-    return i;
+    struct ether_header* ether_hdr = (struct ether_header*)recv_buf;
+
+    memcpy(&listenpipe->addresses[i].mac, &ether_hdr->ether_shost, 6);
+
+    return i + 1;
 }
 
-int checkINET(char * buf, int index) {
-    char check[] = "inet ";
-
-    for (int i = 0; i < 5; i++) {
+int checkINET(char * buf, int index, const char *check) {
+    for (int i = 0; i < strlen(check); i++) {
         if (buf[index + i] != check[i]) return FALSE;
     }
 
@@ -105,13 +92,32 @@ int checkLocalHost(char *ip) {
     return TRUE;
 }
 
-char * getNetIp() {
-    static char outIp[16] = "";
+uint8_t hexConvert(char high_order, char lower_order) {
+    uint8_t output = 0;
 
+    if (high_order >= 'a' && high_order <= 'f') {
+        output += (high_order - 87) << 4;
+    } else {
+        output += (high_order - '0') << 4;
+    }
+
+    if (lower_order >= 'a' && lower_order <= 'f') {
+        output += (lower_order - 87);
+    } else {
+        output += (lower_order - '0');
+    }
+
+    return output;
+}
+
+
+void getNetIp(p_Listener_Pipe listenpipe) {
     FILE *pipe;
     char ip[10][21];
+    char mac[10][18];
     short int cur_ip = 0;
     char buf[250];
+    char macbuf[18];
 
     pipe = popen("ip a", "r");
 
@@ -119,7 +125,14 @@ char * getNetIp() {
         int i = 0;
         while (buf[i] == ' ') i++;
 
-        if (!checkINET(buf, i)) {
+        if (!checkINET(buf, i, "inet ")) {
+            if (checkINET(buf, i, "link/ether ")) {
+                i += 11;
+
+                for (int d = 0; d < 18; d++) {
+                    macbuf[d] = buf[i + d];
+                }
+            }
             continue;
         }
 
@@ -132,6 +145,7 @@ char * getNetIp() {
             }
             else ip[cur_ip][d] = buf[i + d];
         }
+        strcpy(mac[cur_ip], macbuf);
         cur_ip++;
 
     }
@@ -140,12 +154,15 @@ char * getNetIp() {
 
     for (int i = 0; i < cur_ip; i++) {
         if(!checkLocalHost(ip[i])) {
-            strcpy(outIp, ip[i]);
+            listenpipe->listenerAddr.s_addr = inet_addr(ip[i]);
+
+            for (int j = 0; j < 17; j += 3) {
+                listenpipe->listenerMac[j / 3] = hexConvert(mac[i][j], mac[i][j + 1]);
+            }
+
             break;
         }
     }
-    
-    return outIp;
 }
 
 int checkPacket(char * packet, p_Listener_Pipe listenPipe) {
@@ -174,4 +191,39 @@ int checkPacket(char * packet, p_Listener_Pipe listenPipe) {
     if (ipdata->dest_addr.s_addr != listenPipe->listenerAddr.s_addr) return FALSE;
 
     return TRUE;
+}
+
+uint16_t checksum(uint16_t *buf, int len) {
+    uint32_t sum = 0;
+    while (len > 1) {
+        sum += *buf++;
+        len -= 2;
+    }
+    if (len) sum += *(uint8_t *)buf;
+
+    while (sum >> 16) {
+        sum = (sum & 0xffff) + (sum >> 16);
+    }
+
+    return ~sum;
+}
+
+uint16_t checksum_with_pseudo(uint16_t *pseudo_hrd, uint16_t *buf, int len) {
+    uint32_t sum = 0;
+    int hdr_len = sizeof(Pseudo_Header);
+    while (hdr_len) {
+        sum += *pseudo_hrd++;
+        hdr_len -= 2;
+    }
+    while (len > 1) {
+        sum += *buf++;
+        len -= 2;
+    }
+    if (len) sum += *(uint8_t *)buf;
+
+    while (sum >> 16) {
+        sum = (sum & 0xffff) + (sum >> 16);
+    }
+
+    return ~sum;
 }

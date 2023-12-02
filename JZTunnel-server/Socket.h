@@ -114,7 +114,7 @@ PTHREAD_FUNCTION listenerThread(void *args) {
                 if (checkPacket(packetRecv.data, listenPipe)) {
                     packetRecv.id = getAddrId(packetRecv.data, listenPipe);
 
-                    send(listenPipe->clientSocket, (void *)&packetRecv, PACKET_SIZE, 0);
+                    send(listenPipe->clientSocket, (void *)&packetRecv, bytesReceived + 2, 0);
                 }
 
                 memset(&packetRecv, 0, bytesReceived + 2);
