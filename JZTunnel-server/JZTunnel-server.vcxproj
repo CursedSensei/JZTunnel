@@ -22,6 +22,7 @@
     <ClInclude Include="Frameworks.h" />
     <ClInclude Include="Socket.h" />
     <ClInclude Include="Socket_Structs.h" />
+    <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.c" />

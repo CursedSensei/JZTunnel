@@ -24,9 +24,8 @@ const int PACKET_SIZE = PACKET_SIZED;
 #define PASS 0xDE4A5FBA
 #define CLIENT_PORT 443 // soon to change
 
+#define __DEBUG__ 1 // Enable or Disable packet debug messages
+
 #include "Socket_Structs.h"
 #include "Utils.h"
 #include "Socket.h"
-
-
-#define __DEBUG__ 1 // Enable or Disable packet debug messages

@@ -6,9 +6,9 @@ short int GetClientSocket(p_ClientSocketParam clientparams) {
 		return CLIENT_ERROR;
 	}
 
-	char one = 1;
+	int one = 1;
 
-	if (setsockopt(ClientSock, IPPROTO_IP, IP_HDRINCL, &one, sizeof(char)) == INVALID_SOCKET) {
+	if (setsockopt(ClientSock, IPPROTO_IP, IP_HDRINCL, (char *)&one, sizeof(int)) == INVALID_SOCKET) {
 		closesocket(ClientSock);
 		return CLIENT_ERROR;
 	}
@@ -16,7 +16,7 @@ short int GetClientSocket(p_ClientSocketParam clientparams) {
 	sockaddr_in sockAddr;
 
 	sockAddr.sin_family = AF_INET;
-	sockAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	sockAddr.sin_addr.s_addr = LOCAL_IP;
 	sockAddr.sin_port = 0;
 
 	if (bind(clientparams->SocketStatus->clientsockets[clientparams->id - 1], (sockaddr*)&sockAddr, sizeof(sockAddr))) {
@@ -25,7 +25,7 @@ short int GetClientSocket(p_ClientSocketParam clientparams) {
 	}
 
 	clientparams->SocketStatus->clientsockets[clientparams->id - 1] = ClientSock;
-	clientparams->SocketStatus->clientports[clientparams->id - 1] = ntohs(sockAddr.sin_port);
+	clientparams->SocketStatus->clientports[clientparams->id - 1] = sockAddr.sin_port;
 
 	return 0;
 }
@@ -42,25 +42,22 @@ DWORD WINAPI ClientSocket(LPVOID args) {
 		return 0;
 	}
 
-	int clientReceived;
-	sockaddr_in outAddr;
-	int outAddrlen = sizeof(outAddr);
-
 	printf("Client Listener deployed!\n");
 
-	do {
-		Tunnel_Packet sendpack;
+	Tunnel_Packet sendpack;
+	sendpack.id = clientparams->id;
+	int clientReceived;
 
-		clientReceived = recvfrom(clientparams->SocketStatus->clientsockets[clientparams->id - 1], (char *)&sendpack.data, PACKET_SIZE - 2, 0, (sockaddr*)&outAddr, &outAddrlen);
+	do {
+		clientReceived = recv(clientparams->SocketStatus->clientsockets[clientparams->id - 1], (char *)&sendpack.data, PACKET_SIZE - 2, 0);
 		if (clientReceived <= 0) {
 			continue;
 		}
 
-		sendpack.id = clientparams->id;
+		send(clientparams->SocketStatus->ServerSocket, (const char*)&sendpack, clientReceived + 2, 0);
 
-		send(clientparams->SocketStatus->ServerSocket, (const char*)&sendpack, PACKET_SIZE, 0);
-
-	} while (clientReceived > 0);
+		memset(sendpack.data, 0, clientReceived);
+	} while (clientReceived >= 0);
 
 	closesocket(clientparams->SocketStatus->clientsockets[clientparams->id - 1]);
 	clientparams->SocketStatus->clientsockets[clientparams->id - 1] = INVALID_SOCKET;
@@ -155,12 +152,17 @@ DWORD WINAPI ServerSocket(LPVOID args) {
 	printf("Connected!\n");
 
 	int sockReceived;
-	sockaddr_in destAddr;
-	destAddr.sin_family = AF_INET;
-	destAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	Tunnel_Packet recvpacket;
+	p_IP_Header packet_ip = (p_IP_Header)recvpacket.data;
+	p_TCP_Header packet_tcp = (p_TCP_Header)(recvpacket.data + sizeof(IP_Header));
+	p_UDP_Header packet_udp = (p_UDP_Header)(recvpacket.data + sizeof(IP_Header));
+
+	Pseudo_Header pseudo_ip;
+	pseudo_ip.reserved = 0;
+	pseudo_ip.dest_addr = LOCAL_IP;
+	pseudo_ip.src_addr = LOCAL_IP;
 
 	do {
-		Tunnel_Packet recvpacket;
 		sockReceived = recv(SocketStatus->ServerSocket, (char *)&recvpacket, PACKET_SIZE, 0);
 
 		if (sockReceived <= 0) {
@@ -178,14 +180,46 @@ DWORD WINAPI ServerSocket(LPVOID args) {
 				Sleep(1);
 			}
 
-			if (SocketStatus->clientports[recvpacket.id - 1] == INVALID_SOCKET) {
+			if (SocketStatus->clientports[recvpacket.id - 1] == CLIENT_ERROR) {
 				continue;
 			}
 		}
 
-		destAddr.sin_port = htons(SocketStatus->clientports[recvpacket.id - 1]);
+		packet_ip->ttl = 64;
+		packet_ip->src_addr.S_un.S_addr = LOCAL_IP;
+		packet_ip->dest_addr.S_un.S_addr = LOCAL_IP;
+		packet_ip->checksum = 0;
+		packet_ip->checksum = checksum((unsigned short*)packet_ip, sizeof(IP_Header), nullptr);
 
-		sendto(SocketStatus->clientsockets[recvpacket.id - 1], (const char *)&recvpacket.data, sizeof(recvpacket.data), 0, (struct sockaddr*)&destAddr, sizeof(destAddr));
+		switch (packet_ip->protocol) {
+			case IPPROTO_TCP:
+			{
+				pseudo_ip.protocol = IPPROTO_TCP;
+				pseudo_ip.length = sockReceived - 2 - sizeof(IP_Header);
+
+				packet_tcp->src_port = SocketStatus->clientports[recvpacket.id - 1];
+				packet_tcp->dest_port = SocketStatus->client_port;
+				packet_tcp->checksum = 0;
+				packet_tcp->checksum = checksum((unsigned short *)packet_tcp, sockReceived - 2 - sizeof(IP_Header), (unsigned short *)&pseudo_ip);
+			}
+			break;
+
+			case IPPROTO_UDP:
+			{
+				pseudo_ip.protocol = IPPROTO_UDP;
+				pseudo_ip.length = sockReceived - 2 - sizeof(IP_Header);
+				
+				packet_udp->dest_port = SocketStatus->client_port;
+				packet_udp->src_port = SocketStatus->clientports[recvpacket.id - 1];
+				packet_udp->checksum = 0;
+				packet_udp->checksum = checksum((unsigned short*)packet_udp, sockReceived - 2 - sizeof(IP_Header), (unsigned short*)&pseudo_ip);
+			}
+			break;
+		}
+		
+		send(SocketStatus->clientsockets[recvpacket.id - 1], (char*)recvpacket.data, sockReceived - 2, 0);
+
+		memset(&recvpacket, 0, sockReceived + 2);
 	} while (sockReceived >= 0);
 
 	SocketStatus->status = 3;
