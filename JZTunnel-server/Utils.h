@@ -63,8 +63,8 @@ short int getAddrId(unsigned char *recv_buf, p_Listener_Pipe listenpipe) {
     }
 
     listenpipe->addresses = (p_address)realloc(listenpipe->addresses, ++listenpipe->addrLen * sizeof(address));
-    listenpipe->addresses[i].ip.s_addr, recv_header->dest_addr.s_addr;
-    listenpipe->addresses[i].port = porthdr->dest_port;
+    listenpipe->addresses[i].ip.s_addr = recv_header->src_addr.s_addr;
+    listenpipe->addresses[i].port = porthdr->src_port;
 
     struct ether_header* ether_hdr = (struct ether_header*)recv_buf;
 
