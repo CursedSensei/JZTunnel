@@ -8,9 +8,11 @@ int main() {
 	while (TRUE) {
 		printf("Waiting for client\n");
 
-		SOCKET clientSocket = getClientSocket(listenPipe->listenerSocket);
+		SOCKET clientSocket = getClientSocket();
 		if (checkSocket(clientSocket)) continue;
 		else clientStatus = TRUE;
+
+		listenPipe->clientSocket = clientSocket;
 
 		getNetIp(listenPipe);
 

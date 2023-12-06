@@ -169,11 +169,16 @@ DWORD WINAPI ServerSocket(LPVOID args) {
 			continue;
 		}
 
+#if __DEBUG__
+		printf("Received packet from tunnel\n");
+#endif
 		if (recvpacket.id > SocketStatus->lenports ||
 			SocketStatus->clientports[recvpacket.id - 1] == CLIENT_ERROR ||
 			(SocketStatus->clientsockets[recvpacket.id - 1] == INVALID_SOCKET && SocketStatus->clientports[recvpacket.id - 1] != 0))
 		{
-
+#if __DEBUG__
+			printf("Deploying Client Listener\n");
+#endif
 			DeployClientListener(recvpacket.id, SocketStatus);
 
 			while (SocketStatus->clientports[recvpacket.id - 1] == 0) {
@@ -181,6 +186,9 @@ DWORD WINAPI ServerSocket(LPVOID args) {
 			}
 
 			if (SocketStatus->clientports[recvpacket.id - 1] == CLIENT_ERROR) {
+#if __DEBUG__
+				printf("Client Listener creation failed\n");
+#endif
 				continue;
 			}
 		}
@@ -216,7 +224,9 @@ DWORD WINAPI ServerSocket(LPVOID args) {
 			}
 			break;
 		}
-		
+#if __DEBUG__
+		printf("Packet from client id: %d\n", recvpacket.id);
+#endif
 		send(SocketStatus->clientsockets[recvpacket.id - 1], (char*)recvpacket.data, sockReceived - 2, 0);
 
 		memset(&recvpacket, 0, sockReceived + 2);
