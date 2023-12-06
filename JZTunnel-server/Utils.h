@@ -46,7 +46,7 @@ p_Listener_Pipe getListenerPipe() {
     return listenpipe;
 }
 
-short int getAddrId(char *recv_buf, p_Listener_Pipe listenpipe) {
+short int getAddrId(unsigned char *recv_buf, p_Listener_Pipe listenpipe) {
     p_IP_Header recv_header = (p_IP_Header)(recv_buf + sizeof(struct ether_header));
 
     p_UDP_Header porthdr = (p_UDP_Header)(recv_buf + sizeof(IP_Header));
@@ -165,7 +165,7 @@ void getNetIp(p_Listener_Pipe listenpipe) {
     }
 }
 
-int checkPacket(char * packet, p_Listener_Pipe listenPipe) {
+int checkPacket(unsigned char * packet, p_Listener_Pipe listenPipe) {
     p_IP_Header ipdata = (p_IP_Header)(packet + sizeof(struct ether_header));
 
     switch (ipdata->protocol) {

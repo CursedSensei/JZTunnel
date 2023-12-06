@@ -103,21 +103,24 @@ PTHREAD_FUNCTION listenerThread(void *args) {
 
         int bytesReceived = 0;
         Tunnel_Packet packetRecv;
+        Link_Layer_Packet linkRecv;
 
         memset(&packetRecv, 0, PACKET_SIZE);
 
         while (clientStatus) {
-            bytesReceived = recv(listenPipe->listenerSocket, (void *)packetRecv.data, PACKET_SIZE - 2, 0);
+            bytesReceived = recv(listenPipe->listenerSocket, (void *)&linkRecv, PACKET_SIZE + sizeof(struct ether_header) - 2, 0);
 
             if (bytesReceived > 0 && clientStatus) {
 
-                if (checkPacket(packetRecv.data, listenPipe)) {
-                    packetRecv.id = getAddrId(packetRecv.data, listenPipe);
-
+                if (checkPacket((unsigned char *)&linkRecv, listenPipe)) {
+                    packetRecv.id = getAddrId((unsigned char *)&linkRecv, listenPipe);
+                    memcpy(packetRecv.data, linkRecv.data, bytesReceived - sizeof(struct ether_header));
+                    
                     send(listenPipe->clientSocket, (void *)&packetRecv, bytesReceived + 2, 0);
+                    memset(&packetRecv, 0, bytesReceived - sizeof(struct ether_header) + 2);
                 }
 
-                memset(&packetRecv, 0, bytesReceived + 2);
+                memset(&linkRecv, 0, bytesReceived);
             } else printf("pass or error packet \n");
         }
     }

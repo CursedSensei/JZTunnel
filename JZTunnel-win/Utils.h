@@ -111,7 +111,7 @@ unsigned short int checksum(unsigned short int* buf, size_t buflen, unsigned sho
 	}
 
 	if (buflen) {
-		sum += *buf;
+		sum += *(unsigned char *)buf;
 	}
 
 	while (sum >> 16) {

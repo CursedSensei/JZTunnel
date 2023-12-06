@@ -23,8 +23,13 @@ typedef struct {
 
 typedef struct {
 	unsigned short int id;
-	char data[PACKET_SIZED - 2];
+	unsigned char data[PACKET_SIZED - 2];
 } Tunnel_Packet, p_Tunnel_Packet;
+
+typedef struct {
+    struct ether_header ether_hdr;
+    uint8_t data[PACKET_SIZED - 2];
+} Link_Layer_Packet, *p_Link_Layer_Packet;
 
 typedef struct {
     uint8_t extra[8];
