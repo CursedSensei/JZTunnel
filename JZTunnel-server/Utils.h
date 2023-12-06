@@ -49,7 +49,7 @@ p_Listener_Pipe getListenerPipe() {
 short int getAddrId(unsigned char *recv_buf, p_Listener_Pipe listenpipe) {
     p_IP_Header recv_header = (p_IP_Header)(recv_buf + sizeof(struct ether_header));
 
-    p_UDP_Header porthdr = (p_UDP_Header)(recv_buf + sizeof(IP_Header));
+    p_UDP_Header porthdr = (p_UDP_Header)(recv_buf + sizeof(IP_Header) + sizeof(struct ether_header));
 
 #if __DEBUG__
     printf("Packet recieved from IP: %s:%u\n", inet_ntoa(recv_header->src_addr), htons(porthdr->src_port));
