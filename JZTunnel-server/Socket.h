@@ -116,7 +116,7 @@ PTHREAD_FUNCTION listenerThread(void *args) {
                     packetRecv.id = getAddrId((unsigned char *)&linkRecv, listenPipe);
                     memcpy(packetRecv.data, linkRecv.data, bytesReceived - sizeof(struct ether_header));
                     
-                    send(listenPipe->clientSocket, (void *)&packetRecv, bytesReceived + 2, 0);
+                    send(listenPipe->clientSocket, (void *)&packetRecv, bytesReceived - sizeof(struct ether_header) + 2, 0);
                     memset(&packetRecv, 0, bytesReceived - sizeof(struct ether_header) + 2);
                 }
 
